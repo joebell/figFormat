@@ -2,25 +2,25 @@ classdef laserMaster3Form < formFig
     
     methods 
         function FF = laserMaster3Form()
+            FF.renderer = @highResPDF;
             FF.setTitle('laserMasterForm3 Title');
-            FF.gridExtent = [4,8];
+            FF.gridExtent = [7,13];
+
+            offsetVal = [0 0 0 0]; FF.addPanel([1 1 3 4]+offsetVal);
+            offsetVal = [2 0 2 0]; FF.addPanel([1 1 3 4]+offsetVal);
+            offsetVal = [4 0 4 0]; FF.addPanel([1 1 3 4]+offsetVal);
             
-            FF.addPanel([1 1 3 3]);
-            FF.addPanel([1 3 3 5]);
-            FF.addPanel([3 1 4 5]);
+            offsetVal = [0 3 0 3]; FF.addPanel([1 1 4 4]+offsetVal);
+            offsetVal = [3 3 3 3]; FF.addPanel([1 1 4 4]+offsetVal);
+   
+            for row = 7:9
+                for col = 1:6
+                    FF.addPanel([0 0 1 1]+[col row col row]);
+                end
+            end
             
-            offsetVal = [0 1 0 1]*4;
-            FF.addPanel([1 1 2 2]+offsetVal);
-            FF.addPanel([2 1 3 2]+offsetVal);
-            FF.addPanel([3 1 4 2]+offsetVal);
-            offsetVal = [0 1 0 1]*5;
-            FF.addPanel([1 1 2 2]+offsetVal);
-            FF.addPanel([2 1 3 2]+offsetVal);
-            FF.addPanel([3 1 4 2]+offsetVal);
-            offsetVal = [0 1 0 1]*6;
-            FF.addPanel([1 1 2 2]+offsetVal);
-            FF.addPanel([2 1 3 2]+offsetVal);
-            FF.addPanel([3 1 4 2]+offsetVal);
+            FF.addPanel([1 10 7 13]);     
+
         end
     end
 end
