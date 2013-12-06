@@ -20,7 +20,7 @@ classdef formFig < handle
         function FF = formFig(setGridExtent)
             FF.figHandle = figure('Visible','on',...
                                   'Resize','off','MenuBar','none',...
-                                  'Units','inches');
+                                  'Units','inches','KeyPressFcn',{@keyPress,FF});
             FF.paperAxes = axes('Visible','off','Units','normalized');
             FF.renderer = @lowResPDF;
             FF.titleHandle = text(FF.paperSize(1)/2, (FF.paperSize(2) - .625),...
@@ -77,15 +77,21 @@ classdef formFig < handle
             end
         end
         
-        function addPanel(FF,coords) % [top left bottom right]
-            FF.axesList(end+1) = axes('XTick',[],'YTick',[],...
+        function addPanel(FF,coords,varargin) % [top left bottom right]
+            
+            if nargin > 2
+                panelN = varargin{1};
+            else
+                panelN = length(FF.axesList) + 1;
+            end
+            figure(FF.figHandle);
+            FF.axesList(panelN) = axes('XTick',[],'YTick',[],...
                 'Units','inches','UserData',coords,'Visible','on',...
                 'Box','on','XLim',[0 1],'YLim',[0 1]);
-            panelN = length(FF.axesList);
             text(.5,.5,num2str(panelN),...
                     'FontUnits','normalized','FontSize',.25,...
                     'HorizontalAlignment','center');
-            FF.unusedAxes(end+1) = true;
+            FF.unusedAxes(panelN) = true;
             FF.refreshPositions(panelN);
         end
         
@@ -205,6 +211,89 @@ classdef formFig < handle
     end
     
 end
+
+function keyPress(callingFig,E, FF)
+    
+    callingAxis = get(callingFig,'CurrentAxes');
+    global copyFigHandle;
+
+    switch E.Key
+        case 'c'
+            % Clear existing clipboard
+            if ishandle(copyFigHandle)
+                delete(copyFigHandle);
+            end
+            copyFigHandle = figure('Visible','off');
+            
+            % Look for graphics on the panels
+            callingPanelN = dsearchn(FF.axesList',callingAxis);
+            if ~FF.unusedAxes(callingPanelN)
+                % Copy to the clipboard
+                copyobj(callingAxis,copyFigHandle);
+                disp('Axis copied to clipboard.');
+            else
+                delete(copyFigHandle);
+                disp('Empty source axis.');
+            end
+            
+            % Reset current figure
+            figure(callingFig);
+
+        case 'x'
+            % Clear existing clipboard
+            if ishandle(copyFigHandle)
+                delete(copyFigHandle);
+            end
+            copyFigHandle = figure('Visible','off');
+            
+            % Look for graphics on the panels
+            callingPanelN = dsearchn(FF.axesList',callingAxis);
+            if ~FF.unusedAxes(callingPanelN)
+                
+                % Copy to the clipboard
+                copyobj(callingAxis,copyFigHandle);
+                disp('Axis copied to clipboard.');
+                
+                % Delete the old axis and replace it with a blank panel
+                coords = get(callingAxis,'UserData');
+                callingPanelN = dsearchn(FF.axesList',callingAxis);
+                delete(callingAxis);
+                
+                % Reset current figure
+                figure(callingFig);
+                
+                FF.addPanel(coords,callingPanelN);
+                
+                disp('Axis CUT to clipboard.');
+            else
+                delete(copyFigHandle);
+                
+                % Reset current figure
+                figure(callingFig);
+                disp('Empty source axis.');
+            end
+                      
+        case 'v'
+            if ~ishandle(copyFigHandle)
+                disp('Nothing copied to clipboard.');
+                return;
+            end
+            
+            % Delete the old axis and replace it with a blank panel
+            coords = get(callingAxis,'UserData');
+            callingPanelN = dsearchn(FF.axesList',callingAxis);
+            delete(callingAxis);
+            FF.addPanel(coords,callingPanelN);
+            FF.cloneAxesIn(get(copyFigHandle,'CurrentAxes'),callingPanelN);
+            
+            % Reset current figure
+            figure(callingFig);
+            disp('Axis pasted from clipboard.');
+
+    end
+end
+            
+
     
     
     

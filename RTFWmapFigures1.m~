@@ -1,0 +1,7 @@
+function RTFWmapFigures1(fileName)
+
+    axesArray = hgload(fileName);
+    
+    form1 = laserMaster1Form();
+    titleString = get(axesArray(1),'String');
+    form1.setTitle(titleString)
