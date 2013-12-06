@@ -158,7 +158,7 @@ classdef formFig < handle
                 fileName = varargin{1}
             else
                 if ~isempty(FF.fileName)
-                    fileName = FF.fileName;
+                    fileName = [FF.fileName,'.pdf'];
                 else
                     fileName = [datestr(now,'yymmdd-HHMMSS'),'.pdf'];
                 end

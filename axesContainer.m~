@@ -1,18 +1,18 @@
 classdef axesContainer < handle
     
-    properties
-        
-        axesList
-        fileName
-        title
-        
+    properties       
+        axesList      
     end
     
     methods
         
-        function AC = axesContainer(varargin)
+        function AC = axesContainer()
+            if nargin == 0
+                AC.setFileName('');
+                AC.setTitle('');
             if nargin == 1
                 AC.setFileName(varargin{1});
+                AC.setTitle('');
             elseif nargin == 2
                 AC.setFileName(varargin{1});
                 AC.setTitle(varargin{2});
@@ -24,10 +24,14 @@ classdef axesContainer < handle
         end
         
         function setFileName(AC,fileName)
-            AC.fileName = fileName;
+            figH = figure('Visible','off');
+            textH
+            
         end
         
         function setTitle(AC,title)
             AC.title = title;
         end
     end
+    
+end
