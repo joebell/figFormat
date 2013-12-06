@@ -148,10 +148,6 @@ classdef formFig < handle
         	set(FF.titleHandle,'String',titleString);
         end
         
-        function setFileName(FF, fileName)
-            FF.fileName = fileName;
-        end
-        
         function PDF(FF,varargin)
             
             if nargin > 1
@@ -160,9 +156,8 @@ classdef formFig < handle
                 if ~isempty(FF.fileName)
                     fileName = FF.fileName;
                 else
-                    fileName = [datestr(now,'yymmdd-HHMMSS'),'.pdf'];
-                end
-            end
+                    fileName = ['
+                
             
             FF.printPreview(true);
             
