@@ -14,6 +14,7 @@ classdef formFig < handle
         titleHandle
         fileName
         nextPage
+        prevPage
     end    
     
     methods
@@ -35,6 +36,14 @@ classdef formFig < handle
             FF.updateFigurePaperPosition()              
         end
         
+        function setNextPage(FF,NP)
+            FF.nextPage = NP;
+            NP.prevPage = FF;
+        end
+        function setPrevPage(FF,PP)
+            FF.prevPage = PP;
+            PP.nextPage = FF;
+        end     
         function setPaperSize(FF,newSize)
             FF.paperSize = newSize;
             FF.updateFigurePaperPosition()
@@ -45,13 +54,17 @@ classdef formFig < handle
             % Set the screen figure size and position (inches)
             %set(FF.figHandle,...
             %    'PaperPosition',[0, 0, FF.paperSize(1)*FF.viewScale, FF.paperSize(2)*FF.viewScale]); 
+            curPos = get(FF.figHandle,'Position');
             set(FF.figHandle,'Position',...
-                [.5, .5, FF.paperSize(1)*FF.viewScale, FF.paperSize(2)*FF.viewScale]);
+                [curPos(1), curPos(2), FF.paperSize(1)*FF.viewScale, FF.paperSize(2)*FF.viewScale]);
 
             % Update the paper axes (Norm)
             set(FF.paperAxes,   'XLim',[0 FF.paperSize(1)],...
                                 'YLim',[0 FF.paperSize(2)],...
                                 'Position',[0,0,1,1]);
+            % Update the title position
+            set(FF.titleHandle,'Position', [FF.paperSize(1)/2, (FF.paperSize(2) - .563)]);                
+                            
             FF.drawMargins();
             FF.refreshPositions(1:length(FF.axesList));
         
@@ -80,6 +93,32 @@ classdef formFig < handle
             while ~isequal(get(FF.figHandle,'Position'),targetPosition)
                 FF.updateFigurePaperPosition();
                 % get(gcf,'Position')
+            end
+        end
+        
+        function tileDisplay(FF)
+            % Find the base figure
+            baseFF = FF;
+            while ~(isempty(baseFF.prevPage))
+                baseFF = baseFF.prevPage;
+            end
+            
+            % Tile them
+            orPos = get(baseFF.figHandle,'Position');
+            n = 1;
+            set(baseFF.figHandle,'Position',[.25 .25 orPos(3) orPos(4)]);
+            while ~isempty(baseFF.nextPage)
+                n = n + 1;
+                baseFF = baseFF.nextPage;
+                orPos = get(baseFF.figHandle,'Position');
+                set(baseFF.figHandle,'Position',[.25*n .25*n orPos(3) orPos(4)]);
+            end
+            
+            % Set the focus in order
+            figure(baseFF.figHandle);
+            while ~isempty(baseFF.prevPage)
+                baseFF = baseFF.prevPage;
+                figure(baseFF.figHandle);
             end
         end
         
@@ -176,7 +215,8 @@ classdef formFig < handle
                 fileName = varargin{1};
             else
                 if ~isempty(FF.fileName)
-                    fileName = [FF.fileName,'.pdf'];
+                    baseName = strrep(FF.fileName,'.fig','');
+                    fileName = [baseName,'.pdf'];
                 else
                     fileName = [datestr(now,'yymmdd-HHMMSS'),'.pdf'];
                 end
@@ -191,6 +231,56 @@ classdef formFig < handle
                 'PaperPositionMode','manual');
 
             feval(FF.renderer,FF.figHandle,fileName);
+        end
+        
+        function allPDF(FF,varargin)
+            
+            % Find the base figure
+            baseFF = FF;
+            while ~(isempty(baseFF.prevPage))
+                baseFF = baseFF.prevPage;
+            end
+            
+            % Write a PDF for each figure
+            nFig = 0;
+            cFF = baseFF;
+            CMD = ['pdftk '];
+            while ~isempty(cFF)
+                cFF.PDF(['t',num2str(nFig+1),'.pdf']);
+                CMD = [CMD,'t',num2str(nFig+1),'.pdf '];
+                nFig = nFig + 1;
+                cFF = cFF.nextPage;
+            end
+            
+            % Get a fileName
+            if nargin > 1
+                fileName = varargin{1};
+            else
+                if ~isempty(FF.fileName)
+                    if nFig > 1
+                        baseName = strrep(FF.fileName,'.fig','');
+                        fileName = [baseName,'p1-p',num2str(nFig),'.pdf'];
+                    else
+                        baseName = strrep(FF.fileName,'.fig','');
+                        fileName = [baseName,'.pdf'];
+                    end
+                else
+                    if nFig > 1
+                        fileName = [datestr(now,'yymmdd-HHMMSS'),'p1-p',num2str(nFig),'.pdf'];
+                    end
+                end
+            end
+            
+            % Concatenate PDFs
+            unix([CMD,'cat output ',fileName]);
+            
+            % Remove temporary PDFs
+            for n = 1:nFig
+                CMD = ['rm t',num2str(n),'.pdf'];
+                unix(CMD);
+            end
+            
+            disp(['Wrote all PDFs to: ',fileName]);
         end
         
         function printPreview(FF,varargin)     
@@ -251,9 +341,23 @@ function keyPress(callingFig,E, FF)
         % Rotate figure 90 deg
         case 'r'
             FF.paperSize = [FF.paperSize(2) FF.paperSize(1)]; 
-            set(FF.titleHandle,'Position', [FF.paperSize(1)/2, (FF.paperSize(2) - .563)]);
             FF.updateFigurePaperPosition();
             set(callingFig,'CurrentAxes',callingAxis);
+        % Bring next page to front
+        case 'n'
+            if ~isempty(FF.nextPage)
+                figure(FF.nextPage.figHandle);
+            end
+        case 'b'
+            if ~isempty(FF.prevPage)
+                figure(FF.prevPage.figHandle);
+            end
+        % Tile Display    
+        case 't'    
+            FF.tileDisplay();
+        case 'p'
+            disp('Saving PDF...');
+            FF.PDF();
         % Move modes    
         case 'j'
             % Look for graphics on the panels
