@@ -8,7 +8,7 @@ classdef formFig < handle
         gridExtent
         renderer
         axesList
-        unusedAxes
+        axesCoords
         paperAxes
         marginHandles
         titleHandle
@@ -26,7 +26,7 @@ classdef formFig < handle
             FF.paperAxes = axes('Visible','off','Units','normalized');
             FF.renderer = @lowResPDF;
             FF.titleHandle = text(FF.paperSize(1)/2, (FF.paperSize(2) - .563),...
-                'Title','FontUnits','normalized','FontSize',.12/FF.paperSize(2),...
+                '','FontUnits','normalized','FontSize',.12/FF.paperSize(2),...
                 'HorizontalAlignment','center','VerticalAlignment','baseline');
             if nargin > 0
                 FF.gridExtent = setGridExtent;
@@ -131,31 +131,29 @@ classdef formFig < handle
             end
             figure(FF.figHandle);
             FF.axesList(panelN) = axes('XTick',[],'YTick',[],...
-                'Units','inches','UserData',coords,'Visible','on',...
+                'Units','inches','Visible','on',...
+                'ActivePositionProperty','OuterPosition',...
                 'Box','on','XLim',[0 1],'YLim',[0 1]);
+            FF.axesCoords{panelN} = coords;
             text(.5,.5,num2str(panelN),...
                     'FontUnits','normalized','FontSize',.25,...
                     'HorizontalAlignment','center');
-            FF.unusedAxes(panelN) = true;
             FF.refreshPositions(panelN);
         end
         
         function refreshPositions(FF, axesNumbers)
             for axesN = axesNumbers
-                coords = get(FF.axesList(axesN),'UserData');
-                left = coords(1); top = coords(2);
-                right = coords(3); bottom = coords(4);
-                % Compute coords in relative units
-                [relL, relT] = FF.getRelCoords([left,top]);
-                [relR, relB] = FF.getRelCoords([right,bottom]);
-                relWidth = relR - relL;
-                relHeight = relT - relB;
-                set(FF.axesList(axesN),'Units','normalized',...
-                    'OuterPosition',[relL,relB,relWidth,relHeight]);
-                if FF.unusedAxes(axesN)
-                	% Make the empty panel fill the full range
-                    OP = get(FF.axesList(axesN),'OuterPosition');
-                    set(FF.axesList(axesN),'Position',OP);
+                if (ishandle(FF.axesList(axesN))) && (FF.axesList(axesN) ~= 0)
+                    coords = FF.axesCoords{axesN};
+                    left = coords(1); top = coords(2);
+                    right = coords(3); bottom = coords(4);
+                    % Compute coords in relative units
+                    [relL, relT] = FF.getRelCoords([left,top]);
+                    [relR, relB] = FF.getRelCoords([right,bottom]);
+                    relWidth = relR - relL;
+                    relHeight = relT - relB;
+                    set(FF.axesList(axesN),'Units','normalized',...
+                        'OuterPosition',[relL,relB,relWidth,relHeight]);
                 end
             end
         end
@@ -188,13 +186,12 @@ classdef formFig < handle
             normalizeObjects(sourceArray); % Sets all units to normalized
             for sourceN = 1:length(sourceArray)
                 if strcmp(get(sourceArray(sourceN),'Type'),'axes')
-                    coords = get(FF.axesList(targetIX(sourceN)),'UserData');
+                    coords = FF.axesCoords{targetIX(sourceN)};
                     delete(FF.axesList(targetIX(sourceN)));
                     set(sourceArray(sourceN),...
                             'ActivePositionProperty','OuterPosition');
                     FF.axesList(targetIX(sourceN)) = copyobj(sourceArray(sourceN),FF.figHandle);
-                    set(FF.axesList(targetIX(sourceN)),'UserData',coords); 
-                    FF.unusedAxes(targetIX(sourceN)) = false;
+                    FF.axesCoords{targetIX(sourceN)} = coords; 
                     
                 end
             end
@@ -212,7 +209,8 @@ classdef formFig < handle
 		function close(FF)
 			if ~isempty(FF.nextPage)
 				FF.nextPage.close();
-			end
+            end
+            FF.prevPage.nextPage = [];
 			delete(FF.axesList);
 			delete(FF.figHandle);
 		end
@@ -301,19 +299,9 @@ classdef formFig < handle
             end
             
             if previewOn            
-                for axesN = find(FF.unusedAxes == true)
-                    axisChildren = get(FF.axesList(axesN),'Children');
-                    set(axisChildren,'Visible','off');
-                    set(FF.axesList(axesN),'Visible','off');
-                end
                 set(FF.marginHandles,'Visible','off');
                 set(FF.figHandle,'Color','w');
             else
-                for axesN = find(FF.unusedAxes == true)
-                    axisChildren = get(FF.axesList(axesN),'Children');
-                    set(axisChildren,'Visible','on');
-                    set(FF.axesList(axesN),'Visible','on');
-                end
                 set(FF.marginHandles,'Visible','on');
                 set(FF.figHandle,'Color',[.8 .8 .8]);
             end
@@ -347,6 +335,8 @@ function keyPress(callingFig,E, FF)
     end
 
     switch E.Key
+        case 'a'
+            FF.addPanel([1 1 2 2]);
         % Rotate figure 90 deg
         case 'r'
             FF.paperSize = [FF.paperSize(2) FF.paperSize(1)]; 
@@ -365,12 +355,29 @@ function keyPress(callingFig,E, FF)
         case 't'    
             FF.tileDisplay();
         case 'p'
-            disp('Saving PDF...');
-            FF.PDF();
+            if shiftOn
+                disp('Saving all PDFs...');
+                FF.allPDF();
+            else
+                disp('Saving PDF...');
+                FF.PDF();
+            end
+        case 'q'
+            if shiftOn
+            	% Find the base figure
+                baseFF = FF;
+                while ~(isempty(baseFF.prevPage))
+                    baseFF = baseFF.prevPage;
+                end
+                baseFF.close();
+            else
+                FF.close();
+            end
         % Move modes    
         case 'j'
             % Look for graphics on the panels
-            coords = get(callingAxis,'UserData');
+            callingPanelN = dsearchn(FF.axesList',callingAxis);
+            coords = FF.axesCoords{callingPanelN};
             if shiftOn
                 coords(1) = coords(1) - moveIncrement;
             elseif controlOn
@@ -378,12 +385,13 @@ function keyPress(callingFig,E, FF)
             else
                 coords([1,3]) = coords([1,3]) - moveIncrement;
             end
-            set(callingAxis,'UserData',coords);
+            FF.axesCoords{callingPanelN} = coords;
             FF.updateFigurePaperPosition();
             set(callingFig,'CurrentAxes',callingAxis);
         case 'l'
             % Look for graphics on the panels
-            coords = get(callingAxis,'UserData');
+            callingPanelN = dsearchn(FF.axesList',callingAxis);
+            coords = FF.axesCoords{callingPanelN};
             if shiftOn
                 coords(3) = coords(3) + moveIncrement;
             elseif controlOn
@@ -391,12 +399,13 @@ function keyPress(callingFig,E, FF)
             else
                 coords([1,3]) = coords([1,3]) + moveIncrement;
             end
-            set(callingAxis,'UserData',coords);
+            FF.axesCoords{callingPanelN} = coords;
             FF.updateFigurePaperPosition();
             set(callingFig,'CurrentAxes',callingAxis);
         case 'i'
             % Look for graphics on the panels
-            coords = get(callingAxis,'UserData');
+            callingPanelN = dsearchn(FF.axesList',callingAxis);
+            coords = FF.axesCoords{callingPanelN};
             if shiftOn
                 coords(2) = coords(2) - moveIncrement;
             elseif controlOn
@@ -404,12 +413,13 @@ function keyPress(callingFig,E, FF)
             else
                 coords([2,4]) = coords([2,4]) - moveIncrement;
             end
-            set(callingAxis,'UserData',coords);
+            FF.axesCoords{callingPanelN} = coords;
             FF.updateFigurePaperPosition();
             set(callingFig,'CurrentAxes',callingAxis);
         case 'k'
             % Look for graphics on the panels
-            coords = get(callingAxis,'UserData');
+            callingPanelN = dsearchn(FF.axesList',callingAxis);
+            coords = FF.axesCoords{callingPanelN};
             if shiftOn
                 coords(4) = coords(4) + moveIncrement;
             elseif controlOn
@@ -417,7 +427,7 @@ function keyPress(callingFig,E, FF)
             else
                 coords([2,4]) = coords([2,4]) + moveIncrement;
             end
-            set(callingAxis,'UserData',coords);
+            FF.axesCoords{callingPanelN} = coords;
             FF.updateFigurePaperPosition();
             set(callingFig,'CurrentAxes',callingAxis);
          
@@ -431,14 +441,11 @@ function keyPress(callingFig,E, FF)
             
             % Look for graphics on the panels
             callingPanelN = dsearchn(FF.axesList',callingAxis);
-            if ~FF.unusedAxes(callingPanelN)
-                % Copy to the clipboard
-                copyobj(callingAxis,copyFigHandle);
-                disp('Axis copied to clipboard.');
-            else
-                delete(copyFigHandle);
-                disp('Empty source axis.');
-            end
+
+            % Copy to the clipboard
+            copyobj(callingAxis,copyFigHandle);
+            disp('Axis copied to clipboard.');
+
             
             % Reset current figure
             figure(callingFig);
@@ -453,14 +460,13 @@ function keyPress(callingFig,E, FF)
             
             % Look for graphics on the panels
             callingPanelN = dsearchn(FF.axesList',callingAxis);
-            if ~FF.unusedAxes(callingPanelN)
                 
                 % Copy to the clipboard
                 copyobj(callingAxis,copyFigHandle);
                 disp('Axis copied to clipboard.');
                 
                 % Delete the old axis and replace it with a blank panel
-                coords = get(callingAxis,'UserData');
+                coords = FF.axesCoords{callingPanelN};
                 callingPanelN = dsearchn(FF.axesList',callingAxis);
                 delete(callingAxis);
                 
@@ -469,14 +475,6 @@ function keyPress(callingFig,E, FF)
                 
                 FF.addPanel(coords,callingPanelN);
                 disp('Axis CUT to clipboard.');
-            else
-                delete(copyFigHandle);
-                
-                % Reset current figure
-                figure(callingFig);
-                disp('Empty source axis.');
-                set(callingFig,'CurrentAxes',callingAxis);
-            end
                       
         case 'v'
             if ~ishandle(copyFigHandle)
@@ -485,8 +483,8 @@ function keyPress(callingFig,E, FF)
             end
             
             % Delete the old axis and replace it with a blank panel
-            coords = get(callingAxis,'UserData');
             callingPanelN = dsearchn(FF.axesList',callingAxis);
+            coords = FF.axesCoords{callingPanelN};
             delete(callingAxis);
             FF.addPanel(coords,callingPanelN);
             FF.cloneAxesIn(get(copyFigHandle,'CurrentAxes'),callingPanelN);
