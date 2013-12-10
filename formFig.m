@@ -259,7 +259,7 @@ classdef formFig < handle
                 if ~isempty(FF.fileName)
                     if nFig > 1
                         baseName = strrep(FF.fileName,'.fig','');
-                        fileName = [baseName,'p1-p',num2str(nFig),'.pdf'];
+                        fileName = [baseName,'.pdf'];
                     else
                         baseName = strrep(FF.fileName,'.fig','');
                         fileName = [baseName,'.pdf'];
