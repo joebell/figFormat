@@ -213,6 +213,7 @@ classdef formFig < handle
 			if ~isempty(FF.nextPage)
 				FF.nextPage.close();
 			end
+			delete(FF.axesList);
 			delete(FF.figHandle);
 		end
 
