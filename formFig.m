@@ -185,13 +185,13 @@ classdef formFig < handle
                 targetIX = varargin{1};
             end
             
+            normalizeObjects(sourceArray); % Sets all units to normalized
             for sourceN = 1:length(sourceArray)
                 if strcmp(get(sourceArray(sourceN),'Type'),'axes')
                     coords = get(FF.axesList(targetIX(sourceN)),'UserData');
                     delete(FF.axesList(targetIX(sourceN)));
                     set(sourceArray(sourceN),...
-                            'ActivePositionProperty','OuterPosition',...
-                            'Units','normalized');
+                            'ActivePositionProperty','OuterPosition');
                     FF.axesList(targetIX(sourceN)) = copyobj(sourceArray(sourceN),FF.figHandle);
                     set(FF.axesList(targetIX(sourceN)),'UserData',coords); 
                     FF.unusedAxes(targetIX(sourceN)) = false;
