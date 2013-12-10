@@ -208,6 +208,14 @@ classdef formFig < handle
         function setFileName(FF, fileName)
             FF.fileName = fileName;
         end
+
+		function close(FF)
+			if ~isempty(FF.nextPage)
+				FF.nextPage.close();
+			end
+			delete(FF.figHandle);
+		end
+
         
         function PDF(FF,varargin)
             
