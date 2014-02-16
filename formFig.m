@@ -1,5 +1,21 @@
+%%
+%   Cheat sheet:
+%
+%   a - Add panel
+%   r - Rotate paper
+%   n - Next page
+%   b - Back a page
+%   t - Tile pages
+%   p - PDF a page  ([shift] for all pages)
+%   q - Quit a page ([shift] for go to base page)
+%   jkil - Movement ([shift] expand, [ctrl] contract)
+%   c - Copy an axis
+%   x - Cut an axis
+%   v - Paste an axis
+%   h - Heading (title) of page
+%
+
 classdef formFig < handle
-    
     properties
         figHandle
         paperSize = [8.5 11];			 % [width height] (in.)
@@ -493,6 +509,10 @@ function keyPress(callingFig,E, FF)
             figure(callingFig);
             disp('Axis pasted from clipboard.');
             set(callingFig,'CurrentAxes',FF.axesList(callingPanelN));
+        case 'h'
+            % Print a heading title
+            headString = input('Enter a title: ','s');
+            FF.setTitle(headString);
 
     end
     
