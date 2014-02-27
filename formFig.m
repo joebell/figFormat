@@ -1,20 +1,27 @@
 %%
+%
 %   Cheat sheet:
 %
+%   m - Toggle menu
+%   z - Add to workspace
 %   a - Add panel
-%   r - Rotate paper
+%   c - Copy panel to clipboard
+%   x - Cut panel to clipboard
+%   v - Paste panel
+%   r - Rotate figure
 %   n - Next page
-%   b - Back a page
+%   b - Prev. page
 %   t - Tile pages
-%   p - PDF a page  ([shift] for all pages)
-%   q - Quit a page ([shift] for go to base page)
-%   jkil - Movement ([shift] expand, [ctrl] contract)
-%   c - Copy an axis
-%   x - Cut an axis
-%   v - Paste an axis
+%   p - Save to PDF
+%   [shift] p - Save all pages to PDF
+%   q - Close figure
+%   [shift] q - Select page 1
+%   i,j,k,l - Move panel
+%   [shift] i,j,k,l - Expansion
+%   [ctrl] i,j,k,l - Contraction 
 %   h - Heading (title) of page
 %
-
+%
 classdef formFig < handle
     properties
         figHandle
@@ -38,7 +45,8 @@ classdef formFig < handle
         function FF = formFig(setGridExtent)
             FF.figHandle = figure('Visible','on',...
                                   'Resize','off','MenuBar','none',...
-                                  'Units','inches','KeyPressFcn',{@keyPress,FF});
+                                  'Units','inches','KeyPressFcn',{@keyPress,FF},...
+                                  'Renderer','Painters');
             FF.paperAxes = axes('Visible','off','Units','normalized');
             FF.renderer = @lowResPDF;
             FF.titleHandle = text(FF.paperSize(1)/2, (FF.paperSize(2) - .563),...
@@ -351,6 +359,16 @@ function keyPress(callingFig,E, FF)
     end
 
     switch E.Key
+        % Toggle menu
+        case 'm'
+            if strcmp(get(FF.figHandle,'MenuBar'),'figure')
+                set(FF.figHandle,'MenuBar','none');
+            else
+                set(FF.figHandle,'MenuBar','figure');
+            end
+        case 'z'
+            assignin('base','form',FF);
+            disp('Grabbed form to workspace.');
         case 'a'
             FF.addPanel([1 1 2 2]);
         % Rotate figure 90 deg
