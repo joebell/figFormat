@@ -1,5 +1,6 @@
-function FF = subplot(rows, cols, number)
-    
+% Function for generating subplots in the style of MATLAB's subplot
+function FF = ffsubplot(rows, cols, number)
+
     nFigs = length(get(0,'Children'));
     if nFigs > 0
         % If there's an existing figure, see if it's empty
@@ -12,7 +13,7 @@ function FF = subplot(rows, cols, number)
             keyArgs = get(gcf,'KeyPressFcn');
             if length(keyArgs) ~= 2
                 % If not a formFig and isn't empty, just do a regular subplot.
-                builtin(@subplot,rows,cols,number);
+                subplot(rows,cols,number);
                 return;
             else
                 % If it is already a formFig, keep going with it.
@@ -23,7 +24,7 @@ function FF = subplot(rows, cols, number)
         % If there's no existing figure, make one.
         FF = formFig([cols+1,rows+1]);
     end
-    
+
     if (length(number) == 1)
         % Single pane axis
         if (length(FF.axesList) >= number) && (ishandle(FF.axesList(number))) && ...
@@ -35,7 +36,7 @@ function FF = subplot(rows, cols, number)
             rowN = floor((number-1)/cols)+1;
             colN = mod(number-1,cols)+1;
             FF.addPanel([colN rowN colN+1 rowN+1],number);
-        end    
+        end
     else
         % Multiple pane axis
         if (length(FF.axesList) >= number(1)) && (ishandle(FF.axesList(number(1)))) && ...
@@ -51,3 +52,5 @@ function FF = subplot(rows, cols, number)
             FF.addPanel([colMin rowMin colMax+1 rowMax+1],number(1));
         end
     end
+
+
