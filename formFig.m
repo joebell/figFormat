@@ -1,4 +1,7 @@
 %%
+%
+%   Cheat sheet:
+%
 %   m - Toggle menu
 %   z - Add to workspace
 %   a - Add panel
@@ -14,11 +17,12 @@
 %   q - Close figure
 %   [shift] q - Select page 1
 %   i,j,k,l - Move panel
-%   [shift] i,j,k,l - 
-%   [ctrl] i,j,k,l - 
-
+%   [shift] i,j,k,l - Expansion
+%   [ctrl] i,j,k,l - Contraction 
+%   h - Heading (title) of page
+%
+%
 classdef formFig < handle
-    
     properties
         figHandle
         paperSize = [8.5 11];			 % [width height] (in.)
@@ -523,6 +527,10 @@ function keyPress(callingFig,E, FF)
             figure(callingFig);
             disp('Axis pasted from clipboard.');
             set(callingFig,'CurrentAxes',FF.axesList(callingPanelN));
+        case 'h'
+            % Print a heading title
+            headString = input('Enter a title: ','s');
+            FF.setTitle(headString);
 
     end
     
