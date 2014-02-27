@@ -12,9 +12,9 @@ function FF = ffsubplot(rows, cols, number)
             % If it's not empty, see if it's already a formFig
             keyArgs = get(gcf,'KeyPressFcn');
             if length(keyArgs) ~= 2
-                % If not a formFig and isn't empty, just do a regular subplot.
-                subplot(rows,cols,number);
-                return;
+                % If not a formFig and isn't empty, make a new one.
+                % subplot(rows,cols,number);
+                FF = formFig([cols+1,rows+1]);
             else
                 % If it is already a formFig, keep going with it.
                 FF = keyArgs{2};
