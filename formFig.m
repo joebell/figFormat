@@ -1,14 +1,64 @@
 %%
 %
-%   Cheat sheet:
+%   formFig.m
 %
-%   m - Toggle menu
-%   z - Add to workspace
-%   a - Add panel
+%       A MATLAB class for creating reconfigurable multi-axis plots and
+%       templates. Axis locations are based on a rectangular grid. Note
+%       that some functions require the (free) package pdftk.
+%
+%   Usage:
+%
+%       myFormFig = formFig([xGridPoints, yGridPoints]);
+%           Creates a new figure with the specified grid. (eg: For a 2-by-2
+%           axes grid, myFormFig = formFig([3, 3]);
+%
+%       myFormFig.addPanel([top left bottom right], panelNumber);
+%           Create a new panel, with the specified ID, spanning the grid
+%           locations. (eg: myFormFig.addPanel([1,2,2,3],2);)
+%
+%       myFormFig.setPaperSize(newSize);
+%           Change the paper size (in). (eg: myFormFig.setPaperSize([11 8.5]);
+%
+%       myFormFig.setScale(newScale);
+%           Change the display scale. (1 is life-size; .5 is half-size)
+%           
+%       myFormFig.setTitle(titleString);
+%           Set a title at the top of the page.
+%
+%       myFormFig.setNextPage(anotherFormFig);
+%       myFormFig.setPrevPage(anotherFormFig);
+%           Link pages together.
+%
+%       myFormFig.cloneAxesIn(arrayOfAxesHandles,[targetPanelNumbers]);
+%           Copy an existing array of axes into a formFig object.
+%
+%       myFormFig.setFileName(fileName);
+%           Set a filename for saving.
+%
+%       myFormFig.close();
+%
+%       myFormFig.PDF(fileName);
+%           Save a PDF of the current page. (fileName optional)
+%
+%       myFormFig.allPDF(fileName);
+%           Save a concatenated PDF of all pages. (fileName optional)
+%           (Requires pdftk to be installed.)
+%
+%       myFormFig.setRenderer(@newRendererFunction);
+%           Assign new function to render the PDF. (see lowResPDF.m for
+%           example).
+%           
+%
+%   Keyboard Shortcuts:
+%
+%   m - Toggle window menu
+%   h - Heading (title) of page
+%   z - Add the current object to the workspace
+%   a - Add a panel
 %   c - Copy panel to clipboard
 %   x - Cut panel to clipboard
 %   v - Paste panel
-%   r - Rotate figure
+%   r - Rotate whole figure
 %   n - Next page
 %   b - Prev. page
 %   t - Tile pages
@@ -16,12 +66,11 @@
 %   [shift] p - Save all pages to PDF
 %   q - Close figure
 %   [shift] q - Select page 1
-%   i,j,k,l - Move panel
-%   [shift] i,j,k,l - Expansion
-%   [ctrl] i,j,k,l - Contraction 
-%   h - Heading (title) of page
-%
-%
+%   i,j,k,l - Move a panel
+%   [shift] i,j,k,l - Expand panel
+%   [ctrl] i,j,k,l - Contract panel
+%   
+
 classdef formFig < handle
     properties
         figHandle
@@ -71,6 +120,9 @@ classdef formFig < handle
         function setPaperSize(FF,newSize)
             FF.paperSize = newSize;
             FF.updateFigurePaperPosition()
+        end
+        function setRenderer(FF, newRenderer)
+            FF.renderer = newRenderer;
         end
         
         function updateFigurePaperPosition(FF)
@@ -303,12 +355,12 @@ classdef formFig < handle
             end
             
             % Concatenate PDFs
-            unix([CMD,'cat output ',fileName]);
+            system([CMD,'cat output ',fileName]);
             
             % Remove temporary PDFs
             for n = 1:nFig
                 CMD = ['rm t',num2str(n),'.pdf'];
-                unix(CMD);
+                system(CMD);
             end
             
             disp(['Wrote all PDFs to: ',fileName]);
