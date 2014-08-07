@@ -53,6 +53,7 @@
 %
 %   m - Toggle window menu
 %   h - Heading (title) of page
+%   s - Code stamp figure
 %   z - Add the current object to the workspace
 %   a - Add a panel
 %   c - Copy panel to clipboard
@@ -84,6 +85,7 @@ classdef formFig < handle
         paperAxes
         marginHandles
         titleHandle
+        stampHandle
         fileName
         nextPage
         prevPage
@@ -101,6 +103,9 @@ classdef formFig < handle
             FF.titleHandle = text(FF.paperSize(1)/2, (FF.paperSize(2) - .563),...
                 '','FontUnits','normalized','FontSize',.12/FF.paperSize(2),...
                 'HorizontalAlignment','center','VerticalAlignment','baseline');
+            FF.stampHandle = text(FF.paperSize(1) - .563, (0 + .563),...
+                '','FontUnits','normalized','FontSize',.12/FF.paperSize(2),...
+                'HorizontalAlignment','right','VerticalAlignment','baseline');
             if nargin > 0
                 FF.gridExtent = setGridExtent;
             else
@@ -139,7 +144,8 @@ classdef formFig < handle
                                 'YLim',[0 FF.paperSize(2)],...
                                 'Position',[0,0,1,1]);
             % Update the title position
-            set(FF.titleHandle,'Position', [FF.paperSize(1)/2, (FF.paperSize(2) - .563)]);                
+            set(FF.titleHandle,'Position', [FF.paperSize(1)/2, (FF.paperSize(2) - .563)]);  
+            set(FF.stampHandle,'Position', [FF.paperSize(1) - .563, (0 + .563)]);    
                             
             FF.drawMargins();
             FF.refreshPositions(1:length(FF.axesList));
@@ -383,7 +389,28 @@ classdef formFig < handle
             end
             
         end
+        
+        function codeStampFigure(FF, pathToStampFrom)
+            
+            currentDir = pwd();
+            
+            cd(pathToStampFrom);
+            pathToStampFrom = pwd();
+            printPath = regexprep(pathToStampFrom,'.*/','');
+            % [status, hostname] = system('hostname');
+            % hostname = regexprep(hostname,'\n','');
+            [status, shortHash] = system('git rev-parse --short HEAD');
+            
+            cd(currentDir);
+            stampString = [printPath,'-',shortHash];
+            set(FF.stampHandle,'String',stampString);
+        end
+        
+        
+        
     end
+    
+    
     
 end
 
@@ -583,6 +610,8 @@ function keyPress(callingFig,E, FF)
             % Print a heading title
             headString = input('Enter a title: ','s');
             FF.setTitle(headString);
+        case 's'
+            FF.codeStampFigure(pathToStampFrom);
 
     end
     
